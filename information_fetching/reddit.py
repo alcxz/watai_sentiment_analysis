@@ -1,43 +1,26 @@
-import praw
-import requests
+# from reddit_praw import fetch_top_year_posts, process_submissions
+from reddit_basic_api import ObtainAuthKey, RetrieveTopPosts
 from datetime import datetime, timezone
-from dotenv import load_dotenv
-from psaw import PushshiftAPI
-import os
-
-# Setting up an app using reddit api calls
-load_dotenv()
-reddit = praw.Reddit(
-    client_id=os.getenv("REDDIT_CLIENT_ID"),
-    client_secret=os.getenv("REDDIT_CLIENT_SECRET"),
-    user_agent=os.getenv("REDDIT_USER_AGENT")
-)
-
-# API call - gets submission data
-def fetch_top_year_posts(subreddit_name, limit=1000):
-    return reddit.subreddit(subreddit_name).top(
-        time_filter="year",
-        limit=limit
-    )
-
-# Processes Submissions returned from the API call
-def process_submissions(submissions):
-    for sub in submissions:
-        print("\n---", sub.title)
-        print("Score:", sub.score, "•", "Comments:", sub.num_comments)
-        created = datetime.fromtimestamp(sub.created_utc, tz=timezone.utc)
-        print("Created At:  ", created.isoformat())
-
-        # get top-10 comments
-        sub.comment_sort = 'top'
-        sub.comments.replace_more(limit=0)
-        for c in sub.comments[:10]:
-            ts = datetime.fromtimestamp(c.created_utc, tz=timezone.utc).isoformat()
-            print(f"  ▶ {c.score}pts @ {ts} — {c.body[:80].replace(chr(10),' ')}...")
 
 def main():
-    posts = fetch_top_year_posts("wallstreetbets", limit=1000)
-    process_submissions(posts)
+    res = ObtainAuthKey()
+    start_dt = datetime(2023,  1,  1, 0, 0, 0, tzinfo=timezone.utc)
+    end_dt   = datetime(2023, 12, 31, 23,59,59, tzinfo=timezone.utc)
+
+    start_ts = int(start_dt.timestamp())
+    end_ts   = int(end_dt.timestamp())
+    data = RetrieveTopPosts(res.json()["access_token"], start_ts, end_ts, 5)
+    dateFarEnough = False
+    print(len(data))
+    for item in data:
+        # print(item)
+        print("===== Post =====")
+        print("Title: ", item["title"])
+        print("Score: ", item["score"])
+        print("Num Comments: ", item["num_comments"])
+        print("Post Date: ", datetime.fromtimestamp(item["created_utc"], tz=timezone.utc).isoformat())
+
+
 
 
 if __name__ == "__main__":
